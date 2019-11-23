@@ -1,0 +1,435 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>添加维修记录</title>
+    <link href="css/css.css" type="text/css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/jquery.css">
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script>
+
+    /*组装指派人人的字符串*/
+    function reasonPersonString() {
+        var partstr = "";
+        $('input[name=reasonPersonCheckbox]:checked').each(function (index, ele) {
+            partstr += $('input[name=reasonPersonCheckbox]:checked')[index].value + ",";
+        })
+        return partstr;
+    }
+    /* 自动提示设备号监听事件 */
+    function hintDeviceNo(){ 
+       $.ajax({
+           dataType:"json",    //数据类型为json格式
+           contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+           type:"GET",  
+           url:"DeviceSearchSevlet",
+           async: false,
+           data:{
+        	   	type:"selectDeviceNoOnly",
+           		deviceNo:$("#deviceNo1").val()
+           },
+           statusCode: {404: function() {  
+                alert('page not found'); }  
+             },      
+           success:function(data,textStatus){ 
+        	   $("#deviceNo1").autocomplete({
+    	    	      source: data
+    	       });
+           }  
+       }); 
+     }  
+    function selectDeviceName(content) {
+    	$('#DeviceName').text("");
+		$.ajax({
+		       dataType:"json",    //数据类型为json格式
+		       contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+		       type:"GET",  
+		       url:"DeviceSearchSevlet",
+		       async: false,
+		       data:{
+		    	   	type:"selectDeviceName",
+		       		deviceNo:content
+		       },
+		       statusCode: {404: function() {  
+		            alert('page not found'); }  
+		         },      
+		       success:function(data,textStatus){ 
+		    	   $("#DeviceName").text(data[0]);
+		       }  
+		   }); 
+	}
+    $(function() {
+		$("body").delegate(".ui-menu-item-wrapper","click",function(){
+			var content = $(this).text();
+			selectDeviceName(content);
+		});
+		hintDeviceNo();
+	});
+        $(function () {
+            $(".datePick").datepicker({//添加日期选择功能  
+                numberOfMonths: 1,//显示几个月  
+                showButtonPanel: true,//是否显示按钮面板  
+                dateFormat: 'yy-mm-dd',//日期格式  
+                clearText: "清除",//清除日期的按钮名称  
+                closeText: "关闭",//关闭选择框的按钮名称  
+                yearSuffix: '年', //年的后缀  
+                changeYear: true,
+                showMonthAfterYear: true,//是否把月放在年的后面  
+                monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                dayNames: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+                dayNamesShort: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
+                dayNamesMin: ['日', '一', '二', '三', '四', '五', '六'],
+                onSelect: function (selectedDate) {//选择日期后执行的操作
+                    this.value = selectedDate;
+                }
+            });
+            $('.datePick').val(getNowFormatDate());
+        });
+        //获取当前时间，格式YYYY-MM-DD
+        function getNowFormatDate() {
+            var date = new Date();
+            var seperator1 = "-";
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var strDate = date.getDate();
+            if (month >= 1 && month <= 9) {
+                month = "0" + month;
+            }
+            if (strDate >= 0 && strDate <= 9) {
+                strDate = "0" + strDate;
+            }
+            var currentdate = year + seperator1 + month
+                + seperator1 + strDate;
+            return currentdate;
+        }
+        /*发送添加信息*/
+        function altData() {
+            var mustInputFlag = false;
+            $('.mustInput').each(function(){
+                if ($(this).val() == ''){
+                    alert('此项为必填项！');
+                    this.focus();
+                    mustInputFlag = true;
+                    return false;
+                }
+            });
+            if (mustInputFlag)
+                return;
+            $('#partinput').empty().val(partString());
+            $('input[name=repairman]').empty().val(repairmanString());
+            $('input[name=parts]').empty().val(componentString());
+            $.ajax({
+                url: 'QCRUDRepairRecords',
+                method: 'post',
+                data: $('#altForm').serialize(),
+                success: function (json) {
+                    alert('添加成功！');
+                    location='维修记录.html';
+                }
+            })
+        }
+        $(function () {
+            /*查找维修人*/
+            $.ajax({
+                type: "post",
+                url: "QReturnRepairInfo",
+                async: true,
+                data: {
+                    operation: "selname",
+                },
+                dataType: 'JSON',
+                success: function (array2) {
+                    var str2 = "";
+                    $.each(array2, function (index2, obj2, t2) {
+                        str2 += "<input type='checkbox' name='repairmanCheckbox' id='"+ obj2.name +"' value='" + obj2.name + "'>" + obj2.name + " &nbsp;&nbsp;&nbsp;";
+                    });
+                    $('#repairman1').empty().append(str2);
+                }
+            });
+        });
+        function findParts(ele){
+            /*查找配件*/
+        	if($(ele).prop('checked'))
+            $.ajax({
+                type: "post",
+                url: "QReturnRepairInfo",
+                async: false,
+                data: {
+                    deviceNo: ele.value,
+                    deviceNo1: $('#deviceNo1').val(),
+                    operation: "peijian",
+                },
+                dataType: 'JSON',
+                success: function (array1) {
+                    var str1 = "";
+                    $.each(array1, function (index1, obj1, t1) {
+                        str1 += "<input type='checkbox' name='Components' id='"+ obj1.name +"' value='" + obj1.name + "'>" + obj1.name + "<input id='"+ obj1.name +"1' type='text' class='Componentsnum' placeholder='数量' style='width: 28px;'>&nbsp;&nbsp;&nbsp;";
+                    });
+                    $('#Component').append(str1);
+                }
+            });
+        }
+        /*组装部位的字符串*/
+        function partString() {
+            var partstr = "";
+            $('input[name=partstr]:checked').each(function (index, ele) {
+                partstr += $('input[name=partstr]:checked')[index].value + ",";
+            })
+            return partstr;
+        }
+        /*组装维修人的字符串*/
+        function repairmanString() {
+            var partstr = "";
+            $('input[name=repairmanCheckbox]:checked').each(function (index, ele) {
+                partstr += $('input[name=repairmanCheckbox]:checked')[index].value + ",";
+            })
+            return partstr;
+        }
+        /*组装零件和数量的字符串*/
+        function componentString() {
+            var compsrt = "";
+            $('input[name=Components]:checked').each(function (index, ele) {
+                compsrt += $('input[name=Components]:checked')[index].value + "-" + $('.Componentsnum')[index].value + ",";
+            })
+            return compsrt;
+        }
+        /*查找部位*/
+        function findPart(thisvalue){
+        	 selectDeviceName(thisvalue);
+            senddeviceNo = $('#deviceNo1').val();
+            $.ajax({
+                type: "post",
+                url: "QReturnRepairInfo",
+                async: false,
+                data: {
+                    "deviceNo": senddeviceNo,
+                    "operation": "buwei",
+                },
+                dataType: 'JSON',
+                success: function (array) {
+                    var str = "";
+                    $.each(array, function (index, obj, t) {
+                        str += "<input type='checkbox' onclick=\"findParts(this)\" name='partstr' id='"+ obj.name +"' value='" + obj.name + "' />" + obj.name + " &nbsp;&nbsp;&nbsp;";
+                    });
+                    $('#parts').empty().append(str);
+                }
+            });
+        }
+    </script>
+    <style>
+        tr {
+            background-color: rgb(255, 255, 255);
+        }
+
+        td {
+            text-align: center;
+        }
+
+        button {
+            width: 100px;
+            height: 40px;
+            line-height: 30px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #27a9e3;
+            border-radius: 3px;
+            border: none;
+            -webkit-appearance: none;
+            outline: none;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width: 800px; margin: 0 auto; text-align: right;">
+        <a href="维修记录.html">返回维修记录页面</a>
+        <br />
+    </div>
+    <form id="altForm" action="/MaintenanceRecordsOperation" method="post" onsubmit="return validate_form()">
+        <input name="operation" type="hidden" value="add" />
+        <table id="main-tab" width="800px" style="margin: 0 auto;">
+            <tr>
+                <th colspan="2" style="font-size: 2em;">设备维修记录</th>
+            </tr>
+
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">设备编号：</th>
+                <td>
+                    <input id="deviceNo1" type="text" name="deviceNo" onkeyup="hintDeviceNo()"  onchange="findPart(this.value)" class="mustInput"/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">设备名称：</th>
+                <td>
+                    <span id="DeviceName"></span>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px" >报修日期：</th>
+                <td>
+                    <input id="repairDate1" type="text" name="repairDate" class="datePick" readonly class="mustInput"/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px" >接报时刻：</th>
+                <td>
+                    <input id="acceptance1" type="text" name="acceptance" class="datePickTime" readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">开始时刻：</th>
+                <td>
+                    <input id="startTime1" type="text" class="datePickTime" name="startTime"  readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">终了时刻：</th>
+                <td>
+                    <input id="enddate1" type="text" name="endTime" class="datePickTime"  readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">接报人：</th>
+                <td>
+                    <input id="acceptancePerson1" type="text" name="acceptancePerson" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">作业区分：</th>
+                <td>
+                    <select name="task" id="task1">
+                        <option value="巡查">巡查</option>
+                        <option value="定保">定保</option>
+                        <option value="计划">计划</option>
+                        <option value="突发">突发</option>
+                        <option value="改良">改良</option>
+                        <option value="PM卡">PM卡</option>
+                        <option value="领导安排">领导安排</option>
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'" 小时>
+                <th align="right" valign="middle" class="bggray" width="200px">实施区分：</th>
+                <td>
+                    <select name="implementationDistinction" id="implementationDistinction1">
+                        <option value="机械">机械</option>
+                        <option value="电气">电气</option>
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'" 小时>
+                <th align="right" valign="middle" class="bggray" width="200px">完成与否：</th>
+                <td>
+                    <select name="finish" id="finish1">
+                        <option value="完成">完成</option>
+                        <option value="未完成">未完成</option>
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'" 小时>
+                <th align="right" valign="middle" class="bggray" width="200px">保全修理时间：</th>
+                <td>
+                    <input id="maintenanceTime1" type="text" name="maintenanceTime" />分钟
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">设备停机时间：</th>
+                <td>
+                    <input id="downTime1" type="text" name="downTime" />分钟
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">保全人数：</th>
+                <td>
+                    <input id="repairmanNumber1" type="text" name="repairmanNumber" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">部位:</th>
+                <input type="hidden" name="part" id="partinput" />
+                <td id="parts">
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">故障情况：</th>
+                <td>
+                    <input id="faultConditions1" type="text" name="faultConditions"  class="mustInput"/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">故障原因：</th>
+                <td>
+                    <input id="failureCause1" type="text" name="failureCause" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">处置方法：</th>
+                <td>
+                    <input id="disposalMethod1" type="text" name="disposalMethod" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">维修人：</th>
+                <input type="hidden" name="repairman" id="repairmaninput" />
+                <td id="repairman1">
+
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">配件和数量：</th>
+                <input type="hidden" name="parts" id="partsinput" />
+                <td id="Component">
+
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">报修单编号：</th>
+                <td>
+                    <input id="no1" type="text" name="no">
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">备注：</th>
+                <td>
+                    <input id="mark1" type="text" name="mark">
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <td colspan="2">
+                    <input type="button" value="确定" onclick="altData()" />
+                </td>
+            </tr>
+        </table>
+    </form>
+    <script src="laydate/laydate.js"></script> <!-- 改成你的路径 -->
+	<script>
+	lay('#version').html('-v'+ laydate.v);
+	
+	//执行一个laydate实例
+	laydate.render({
+	  elem: '#acceptance1' //指定元素
+	  ,type: 'time'
+	  ,value: new Date()
+	  ,isInitValue: true
+	});
+	laydate.render({
+	  elem: '#startTime1' //指定元素
+	  ,type: 'time'
+	  ,value: new Date()
+	  ,isInitValue: true
+	});
+	laydate.render({
+	  elem: '#enddate1' //指定元素
+	  ,type: 'time'
+	  ,value: new Date()
+	  ,isInitValue: true
+	});
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,497 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>定保增加</title>
+    <link href="css/css.css" type="text/css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/jquery.css">
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script>
+    /* 自动提示设备号监听事件 */
+    function hintDeviceNo(){ 
+       $.ajax({
+           dataType:"json",    //数据类型为json格式
+           contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+           type:"GET",  
+           url:"DeviceSearchSevlet",
+           async: false,
+           data:{
+        	   	type:"selectDeviceNoOnly",
+           		deviceNo:$("#deviceNo").val()
+           },
+           statusCode: {404: function() {  
+                alert('page not found'); }  
+             },      
+           success:function(data,textStatus){ 
+        	   $("#deviceNo").autocomplete({
+    	    	      source: data
+    	       });
+           }  
+       }); 
+     }  
+    function selectDeviceName(content) {
+    	$('#DeviceName').text("");
+		$.ajax({
+		       dataType:"json",    //数据类型为json格式
+		       contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+		       type:"GET",  
+		       url:"DeviceSearchSevlet",
+		       async: false,
+		       data:{
+		    	   	type:"selectDeviceName",
+		       		deviceNo:content
+		       },
+		       statusCode: {404: function() {  
+		            alert('page not found'); }  
+		         },      
+		       success:function(data,textStatus){ 
+		    	   $("#DeviceName").text(data[0]);
+		       }  
+		   }); 
+	}
+    /*组装指派人人的字符串*/
+    function reasonPersonString() {
+        var partstr = "";
+        $('input[name=reasonPersonCheckbox]:checked').each(function (index, ele) {
+            partstr += $('input[name=reasonPersonCheckbox]:checked')[index].value + ",";
+        })
+        return partstr;
+    }
+    /*查找指派人*/
+    function findReasonPerson(){
+	    $.ajax({
+	        type: "post",
+	        url: "QReturnRepairInfo",
+	        async: false,
+	        data: {
+	            operation: "selname",
+	            
+	        },
+	        dataType: 'JSON',
+	        success: function (array2) {
+	        	
+	            //var str2 = "";
+	            //$.each(array2, function (index2, obj2, t2) {
+	            //    str2 += "<input type='checkbox' name='reasonPersonCheckbox' id='"+ obj2.name +"' value='" + obj2.name + "'>" + obj2.name + " &nbsp;&nbsp;&nbsp;";
+	            //});
+	            //$('#reasonPerson').append(str2);
+	            $('#reasonPerson').html("");
+	            findAreaPerson(array2);
+	            
+	        }
+	    });
+    }
+    /*根据设备号获取区域内员工*/
+    function findAreaPerson(array2){
+	    $.ajax({
+	        type: "post",
+	        url: "QReturnRepairInfo",
+	        async: false,
+	        data: {
+	            operation: "selAreaname",
+	            deviceNo:$('#deviceNo').val()
+	        },
+	        dataType: 'JSON',
+	        success: function (array3) {
+	        	
+	            var str2 = "";
+	            $.each(array2, function (index2, obj2, t2) {
+	            	var isCheck=0;
+	            	$.each(array3, function (index3, obj3, t3)
+	            	{
+	            		if(obj3.name==obj2.name)
+	            		{
+	            			isCheck=1;
+	            		}
+	            	});
+	            	if(isCheck==1)
+	            	{
+	            		str2 += "<input type='checkbox' name='reasonPersonCheckbox' checked='true' id='"+ obj2.name +"' value='" + obj2.name + "'>" + obj2.name + " &nbsp;&nbsp;&nbsp;";
+	            	}
+	            	else
+	            	{
+	            		str2 += "<input type='checkbox' name='reasonPersonCheckbox' id='"+ obj2.name +"' value='" + obj2.name + "'>" + obj2.name + " &nbsp;&nbsp;&nbsp;";
+	            	}
+	                
+	            });
+	            $('#reasonPerson').append(str2);
+	            
+	            
+	        }
+	    });
+    }
+    // 获取保养项的标准与工时
+    function getContentMark(){
+    	$.ajax({
+			url:"MaintanceOperation",
+			data:{
+				operation:'getContentMark',
+				content:$('#content').val()
+			},
+			dataType:'json',
+			success:function(json){
+				var str = "";
+				$.each(json,function(index, element){
+					str += element;
+				});
+				$('#contentMark').val(str);
+			}
+		});
+    }
+    $(function() {
+    	//findReasonPerson();
+		$("body").delegate(".ui-menu-item-wrapper","click",function(){
+			var content = $(this).text();
+			selectDeviceName(content);
+			// 获取保养项
+			$.ajax({
+				url:"MaintanceOperation",
+				async: false,
+				data:{
+					operation:'getMaintanInfo',
+					deviceNo:$('#deviceNo').val()
+				},
+				dataType:'json',
+				success:function(json){
+					var str = "";
+					$.each(json,function(index, element){
+						str += "<option value='"+element+"'>"+element+"</option>";
+					});
+					$('#content').empty().append(str);
+				}
+			});
+			getContentMark();
+			findReasonPerson();
+			// 获取部位
+			$.ajax({
+				url:"MaintanceOperation",
+				data:{
+					operation:'getPart',
+					deviceNo:$('#deviceNo').val()
+				},
+				dataType:'json',
+				success:function(json){
+					var str = "";
+					$.each(json,function(index, element){
+						str += "<option value='"+element+"'>"+element+"</option>";
+					});
+					$('#part').empty().append(str);
+				}
+			});
+		});
+		hintDeviceNo();
+	});
+        $(function () {
+            $(".datePick").datepicker({//添加日期选择功能  
+                numberOfMonths: 1,//显示几个月  
+                showButtonPanel: true,//是否显示按钮面板  
+                dateFormat: 'yy-mm-dd',//日期格式  
+                clearText: "清除",//清除日期的按钮名称  
+                closeText: "关闭",//关闭选择框的按钮名称  
+                yearSuffix: '年', //年的后缀  
+                changeYear: true,
+                showMonthAfterYear: true,//是否把月放在年的后面  
+                monthNames: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                dayNames: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+                dayNamesShort: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
+                dayNamesMin: ['日', '一', '二', '三', '四', '五', '六'],
+                onSelect: function (selectedDate) {//选择日期后执行的操作
+                    this.value = selectedDate;
+                }
+            });
+            $('.datePick').val(getNowFormatDate());
+            /*查找领取人和计划领取人*/
+            $.ajax({
+                type: "post",
+                url: "QReturnRepairInfo",
+                async: true,
+                data: {
+                    operation: "selname",
+                },
+                dataType: 'JSON',
+                success: function (array2) {
+                    // 领取人
+                    /* var str2 = "";
+                    $.each(array2, function (index2, obj2, t2) {
+                        str2 += "<input type='checkbox' name='maintenancePersonCheckbox' value='" + obj2.name + "'>" + obj2.name + " &nbsp;&nbsp;&nbsp;";
+                    });
+                    $('#maintenancePersonTd').empty().append(str2); */
+                    // 计划领取人
+                    /* str2 = "";
+                    $.each(array2, function (index2, obj2, t2) {
+                        str2 += "<input type='checkbox' name='person2Checkbox' value='" + obj2.name + "'>" + obj2.name + " &nbsp;&nbsp;&nbsp;";
+                    });
+                    $('#person2Td').empty().append(str2); */
+                }
+            });
+        });
+        /*组装领取人的字符串*/
+        function maintenancePersonString() {
+            var partstr = "";
+            $('input[name=maintenancePersonCheckbox]:checked').each(function (index, ele) {
+                partstr += $('input[name=maintenancePersonCheckbox]:checked')[index].value + ",";
+            })
+            return partstr;
+        }
+        /*组装计划领取人的字符串*/
+        function person2String() {
+            var partstr = "";
+            $('input[name=person2Checkbox]:checked').each(function (index, ele) {
+                partstr += $('input[name=person2Checkbox]:checked')[index].value + ",";
+            })
+            return partstr;
+        }
+        //获取当前时间，格式YYYY-MM-DD
+        function getNowFormatDate() {
+            var date = new Date();
+            var seperator1 = "-";
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var strDate = date.getDate();
+            if (month >= 1 && month <= 9) {
+                month = "0" + month;
+            }
+            if (strDate >= 0 && strDate <= 9) {
+                strDate = "0" + strDate;
+            }
+            var currentdate = year + seperator1 + month
+                + seperator1 + strDate;
+            return currentdate;
+        }
+        // 上传数据
+        function postData(){
+        	$('#reason').val(reasonPersonString());
+            var mustInputFlag = false;
+            $('.mustInput').each(function(){
+                if ($(this).val() == ''){
+                    alert('此项为必填项！');
+                    this.focus();
+                    mustInputFlag = true;
+                    return false;
+                }
+            });
+            if (mustInputFlag)
+                return;
+            $('input[name=maintenancePerson]').val(maintenancePersonString());
+            $('input[name=person2]').val(person2String());
+            $.ajax({
+                url:'CRUDMaintance',
+                method:'post',
+                data: $('#addFrom').serialize(),
+                success:function(json){
+                    alert('添加成功！');
+                }
+            })
+        }
+    </script>
+    <style>
+        tr {
+            background-color: rgb(255, 255, 255);
+        }
+
+        td {
+            text-align: center;
+        }
+
+        button {
+            width: 100px;
+            height: 40px;
+            line-height: 30px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #27a9e3;
+            border-radius: 3px;
+            border: none;
+            -webkit-appearance: none;
+            outline: none;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width: 800px; margin: 0 auto; text-align: right;">
+        <a href="定保.html">返回定保页面</a>
+        <br />
+    </div>
+    <form id="addFrom" action="/MaintenanceRecordsOperation" method="post" onsubmit="return validate_form()">
+        <input name="operation" type="hidden" value="add" />
+        <table id="main-tab" width="800px" style="margin: 0 auto;">
+            <tr>
+                <th colspan="2" style="font-size: 2em;">设备定保信息</th>
+            </tr>
+
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">设备编号：</th>
+                <td>
+                    <input type="text" id="deviceNo" name="deviceNo" onkeyup="hintDeviceNo()" onchange="selectDeviceName(this.value)"/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">设备名称：</th>
+                <td>
+                    <span id="DeviceName"></span>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">保全项目：</th>
+                <td>
+                    <select name="content" id="content" onchange="getContentMark()">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">标准与工时：</th>
+                <td>
+                	<input type="text" id="contentMark" name="contentMark" style="width: 500px;height: 134px;"  readonly="readonly"/>
+                	<input id="reason" type="hidden" name="reason" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">润滑部位：</th>
+                <td>
+                    <select name="part" id="">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">油品规格：</th>
+                <td>
+                    <input id="" type="text" name="oil" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'"  style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">加注方式：</th>
+                <td>
+                    <input type="text" name="type" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">加注量：</th>
+                <td>
+                    <input type="text" name="fill" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">保全方法：</th>
+                <td>
+                    <input type="text" name="method" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">判断方法：</th>
+                <td>
+                    <input type="text" name="tpye" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">指派人：</th>
+                <td id="reasonPerson">
+                    
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">检查标准：</th>
+                <td>
+                    <input type="text" name="standard" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">安全风险：</th>
+                <td>
+                    <input type="text" name="security" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">工具：</th>
+                <td>
+                    <input type="text" name="tool" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">人数：</th>
+                <td>
+                    <input type="text" name="pnumber" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none;"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">分钟数：</th>
+                <td>
+                    <input type="text" name="mnumber" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">定保周期：</th>
+                <td>
+                	<select name="cycle" style="width:10em;">
+                		<option>1</option>
+                		<option>2</option>
+                		<option>3</option>
+                		<option>4</option>
+                		<option>5</option>
+                		<option>6</option>
+                		<option>7</option>
+                		<option>8</option>
+                		<option>9</option>
+                		<option>10</option>
+                		<option>11</option>
+                		<option>12</option>
+                	</select>月/次
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">定保日期：</th>
+                <td>
+                    <input id="" type="text" name="maintanceDate" class="datePick" readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none"   onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">领取人：</th>
+                <td id="maintenancePersonTd">
+                	<input type="text" name="maintenancePerson" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" style="display:none"  class="bggray" width="200px">领取时间：</th>
+                <td>
+                    <input type="text" name="date1" class="" readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">计划领取人：</th>
+                <td id="person2Td">
+                	<input type="text" name="person2" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" style="display:none"  class="bggray" width="200px">计划领取时间：</th>
+                <td>
+                    <input type="text" name="date2" class="" readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" style="display:none"  onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">完成时间：</th>
+                <td>
+                    <input type="text" name="time" class="" readonly/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">备注：</th>
+                <td>
+                    <input type="text" name="mark" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <td colspan="2">
+                    <input type="button" value="确定" onclick="postData()"/>
+                </td>
+            </tr>
+        </table>
+    </form>
+</body>
+
+</html>

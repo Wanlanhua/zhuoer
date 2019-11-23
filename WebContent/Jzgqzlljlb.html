@@ -1,0 +1,425 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>集中供气流量</title>
+    <link href="css/css.css" type="text/css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/jquery.css">
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script>
+        
+    </script>
+    <style>
+        tr {
+            background-color: rgb(255, 255, 255);
+        }
+
+        td {
+            text-align: center;
+        }
+
+        button {
+            width: 100px;
+            height: 40px;
+            line-height: 30px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #27a9e3;
+            border-radius: 3px;
+            border: none;
+            -webkit-appearance: none;
+            outline: none;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width: 800px; margin: 0 auto; text-align: right;">
+	 	<a href="newCareDevice/GetJZGQZLLJLB">返回集中供气站流量</a>
+        <br />
+    </div>
+    <form id="altForm" action="" method="post" onsubmit="return validate_form()">
+        <table id="main-tab" width="800px" style="margin: 0 auto;">
+            <tr>
+                <th colspan="2" style="font-size: 2em;">集中供气流量</th>
+            </tr>
+
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">时间：</th>
+                <td>
+                    <input id="datetime" type="text" name="datetime" />
+                </td>
+            </tr>
+             <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">部门：</th>
+                <td>
+                    <select id="departments">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">区域：</th>
+                <td>
+                    <select id="areas">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">设备：</th>
+                <td>
+                    <select name="shebei" id="shebei">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">气体：</th>
+                <td>
+                    <select name="qiti" id="qiti">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">流量数值：</th>
+                <td>
+                    <input type="number" step="0.01" name="liuliangshuzhi" id="liuliangshuzhi"/>nm³
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">压力值：</th>
+                <td>
+                    <input type="number" step="0.01" name="yalizhi" id="yalizhi"/>kpa
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">记录人：</th>
+                <td>
+                    <select name="jiluren" id="jiluren">
+                    </select>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">审核意见：</th>
+                <td>
+                    <input type="text" name="shenheyijian" id="shenheyijian" />
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <th align="right" valign="middle" class="bggray" width="200px">备注：</th>
+                <td>
+                    <input type="text" name="mark" id="mark"/>
+                </td>
+            </tr>
+            <tr onmouseout="this.style.backgroundColor='#ffffff'" onmouseover="this.style.backgroundColor='#edf5ff'">
+                <td colspan="2">
+                    <input type="button" value="确定" onclick="cdata()" />
+                    <input type="button" value="通过" onclick="pass()" />
+                    <input type="button" value="不通过" onclick="npass()" />
+                </td>
+            </tr>
+        </table>
+    </form>
+    <script src="laydate/laydate.js"></script> 
+	<script>
+		var url = "";
+		$("#departments").on("change",function() {
+			alert($)
+			$.ajax({
+				type:"get",
+				url:"GetArea",
+				async:false,
+				data:{"department":$("#department").val()},
+				success:function(res) {
+					var data = JSON.parse(res);
+					var html = "";
+					for(var k in data) {
+						html += "<option value="+data[k]+">"+data[k]+"</option>"
+					}
+					$("#areas").html(html);
+				}
+			});
+		});
+		$("#areas").on("change",function() {
+			$.ajax({
+				type:"get",
+				url:"GetShebei",
+				async:false,
+				data:{"name":$("#areas").val()},
+				success:function(res) {
+					var data = JSON.parse(res);
+					var html = "";
+					for(var k in data) {
+						html += "<option value="+k+">"+k+" "+data[k]+"</option>";
+					}
+					$("#shebei").html(html);
+					getEmployee();
+				}
+			});
+		});
+		lay('#version').html('-v'+ laydate.v);
+		var date = new Date();
+		var year = date.getFullYear();
+		var month = date.getMonth()+1;
+		console.log(month.length)
+		if(month<10) {
+			month = "0"+month;
+		}
+		var day = date.getDate();
+		var hourse = date.getHours();
+		var min = date.getMinutes();
+		var s = date.getSeconds();
+		$("#datetime").val(year+"-"+month+"-"+day+" "+hourse+":"+min+":"+s);
+		//执行一个laydate实例
+		laydate.render({
+		  elem: '#datetime' //指定元素
+		  ,type: 'datetime'
+		});
+		var href = window.location.href;
+		var no = href.lastIndexOf("?no");
+		var id= href.lastIndexOf("id");
+		if(no != "-1" && id=="-1") {
+			var n = href.substring(no+4,href.length);
+			//添加
+			init();
+			$("#shenheyijian").attr("disabled","disabled")
+			url = "InsertJZGQZLLJLB";
+			$("input[type='button'][value='通过']").attr("disabled","disabled");
+			$("input[type='button'][value='不通过']").attr("disabled","disabled");
+		}else if(no!="-1" && id!="-1"){
+			$("#shenheyijian").attr("disabled","disabled")
+			$("input[type='button'][value='通过']").attr("disabled","disabled");
+			$("input[type='button'][value='不通过']").attr("disabled","disabled");
+			//更新
+			var n = href.substring(no+4,id-1);
+			var i = href.substring(id+3,href.length);
+			url = "UpdateDBCZJLB?id="+i;
+			var shebei = "";
+			init();
+			$.ajax({
+				type:"get",
+				url:"GetSaveJZGQZLLJLB",
+				async:false,
+				data:{"id":i},
+				success:function(res) {
+					var data = JSON.parse(res);
+					var data = data[0];
+					for(var k in data) {
+						$("#"+k).val(data[k]);
+					}
+					shebei = data["shebei"];
+				}
+			});
+			$.ajax({
+				type:"get",
+				url:"GetCareDevice",
+				async:false,
+				data:{"shebei":shebei},
+				success:function(res) {
+					var data = JSON.parse(res);
+					for(var k in data) {
+						$("#shebei").html("<option value="+k+">"+k+" "+data[k]+"</option>")
+					}
+				}
+			});
+		} else if(no=="-1" && id!="-1") {
+			//审核
+			$("input[type='button'][value='确定']").attr("disabled","disabled")
+			var n = "";
+			var i = href.substring(id+3,href.length);
+			var shebei = "";
+			init();
+			$.ajax({
+				type:"get",
+				url:"GetSaveJZGQZLLJLB",
+				async:false,
+				data:{"id":i},
+				success:function(res) {
+					var data = JSON.parse(res);
+					var data = data[0];
+					for(var k in data) {
+						if(k=="jiluren") {
+							var jlr = $("#jiluren");
+							jlr.val("");
+							var html = "";
+							html += "<option value="+data[k]+">"+data[k]+"</option>";
+							jlr.html(html);
+						}
+						else {
+							$("#"+k).val(data[k]); 
+						}
+					}
+					shebei = data["shebei"];
+				}
+			});
+			$.ajax({
+				type:"get",
+				url:"GetCareDevice",
+				async:false,
+				data:{"shebei":shebei},
+				success:function(res) {
+					var data = JSON.parse(res);
+					for(var k in data) {
+						$("#shebei").html("<option value="+k+">"+k+" "+data[k]+"</option>")
+					}
+					$.ajax({
+						type:"get",
+						url:"GetAreaAndGLYS",
+						async:false,
+						data:{"deviceno":shebei},
+						success:function(res) {
+							var data = JSON.parse(res);
+							$("#areas").val("");
+							for(var k in data[0]) {
+								$("#areas").html("<option value="+k+">"+k+" "+data[0][k]+"</option>");
+							}
+						}
+					});
+				}
+			});
+		}
+		function init() {
+			$.ajax({
+				type:"get",
+				url:"GetDepartmentAndArea",
+				async:false,
+				data:{"no":n},
+				success:function(res) {
+					var data = JSON.parse(res);
+					var departments = data[0];
+					var html = "";
+					for(var k in departments) {
+						html += "<option value="+k+">"+k+" "+departments[k]+"</option>"
+					}
+					$("#departments").html(html);
+					html = "";
+					var areas = data[1];
+					for(var k in areas) {
+						html += "<option value="+k+">"+areas[k]+"</option>"
+					}
+					$("#areas").html(html);
+					html = "";
+					var devices = data[2];
+					for(var k in devices) {
+						html += "<option value="+k+">"+k+" "+devices[k]+"</option>";
+					}
+					$("#shebei").html(html);
+					getEmployee();
+				}
+			});
+			$.ajax({
+				type:"get",
+				url:"GetJQITI",
+				async:true,
+				success:function(res) {
+					var data = JSON.parse(res);
+					data = data['content'];
+					var html = "";
+					for(var k in data) {
+						html += "<option value="+data[k]['name']+">"+data[k]['name']+"</option>"
+					}
+					$("#qiti").html(html);
+				}
+			});
+		}
+		function cdata() {
+			var j = $("form").serializeObject();
+			resetForm();
+			$.ajax({
+				type:"get",
+				url:url,
+				data:j,
+				async:false,
+				success:function(res) {
+					alert("成功")
+				}
+			});
+		}
+		$.fn.serializeObject = function() {  
+	        var o = {};  
+	        var a = this.serializeArray();  
+	        $.each(a, function() {  
+	            if (o[this.name]) {  
+	                if (!o[this.name].push) {  
+	                    o[this.name] = [ o[this.name] ];  
+	                }  
+	                o[this.name].push(this.value || '');  
+	            } else {  
+	                o[this.name] = this.value || '';  
+	            }  
+	        });  
+	        return o; 
+    	}
+		function resetForm() {
+			$("form")[0].reset();
+			var date = new Date();
+			var year = date.getFullYear();
+			var month = date.getMonth()+1;
+			var day = date.getDate();
+			var hourse = date.getHours();
+			var min = date.getMinutes();
+			var s = date.getSeconds();
+			$("#datetime").val(year+"-"+month+"-"+day+" "+hourse+":"+min+":"+s);
+		}
+		function pass() {
+			var i = href.substring(id+3,href.length);
+			var j = {
+				id:i,
+				"shenheyijian":$("#shenheyijian").val(),
+				status:"1"
+			}
+			$.ajax({
+				type:"get",
+				url:"SHJZGQZLLJLB",
+				async:false,
+				data:j,
+				success:function(res) {
+					$("input[type='button'][value='通过']").attr("disabled","disabled");
+					$("input[type='button'][value='不通过']").attr("disabled","disabled");
+					alert('审核通过');
+					window.location.href="newCareDevice/GetJZGQZLLJLB"
+				}
+			});
+		}
+		function npass() {
+			var i = href.substring(id+3,href.length);
+			var j = {
+				id:i,
+				"shenheyijian":$("#shenheyijian").val(),
+				status:"2"
+			}
+			$.ajax({
+				type:"get",
+				url:"SHJZGQZLLJLB",
+				async:false,
+				data:j,
+				success:function(res) {
+					$("input[type='button'][value='通过']").attr("disabled","disabled");
+					$("input[type='button'][value='不通过']").attr("disabled","disabled");
+					alert('审核不通过');
+				}
+			});
+		}
+		function getEmployee() {
+			$.ajax({
+				type:"get",
+				url:"GetEmployee",
+				async:false,
+				data:{"area":$("#areas").val()},
+				success:function(res) {
+					var data = JSON.parse(res);
+					var html = "";
+					for(var k in data) {
+						html += "<option value="+data[k]+">"+data[k]+"</option>";
+					}
+					$("#jiluren").html(html);
+				}
+			});
+		}
+	</script>
+</body>
+
+</html>

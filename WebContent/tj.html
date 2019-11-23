@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+	<title>Document</title>
+	<link href="css/css.css" type="text/css" rel="stylesheet" />
+	<link rel="stylesheet" href="css/jquery.css">
+	<script src="js/jquery.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<style type="text/css">
+	
+		.ui-autocomplete {
+			position: absolute;
+			top: 0;
+			left: 0;
+			cursor: default;
+			overflow-y:scroll;
+			overflow-x:hidden; 
+			max-height: 300px; 
+		}
+		#select {
+		    line-height: 24px;
+		    width: 180px;
+		    margin: 8px 0 6px 0;
+		    padding: 0 0px 0 10px;
+		    float: left;
+		    border: 1px solid #FFF;
+		}
+		#search select {
+			height: 26px;
+			line-height: 26px;
+			width: 195px;
+			margin: 8px 0 6px 0;
+			padding: 0 0px 0 10px;
+			float: none !important;
+			border: 1px solid #FFF;
+			display: inline-block;
+		}
+		#search form input.text-word {
+			height: 24px;
+			line-height: 24px;
+			width: 180px;
+			margin: 8px 0 6px 0;
+			padding: 0 0px 0 10px;
+			border: 1px solid #FFF;
+			display: inline-block;
+			float: none !important;
+		}
+		#search form span {
+			display: inline-block;
+			float: none !important;
+		}
+		#search form .text-but {
+			float: none !important;
+		}
+	</style>
+</head>
+<body>
+	<body>
+<table width="100% !important" border="0" cellspacing="0" cellpadding="0" id="searchmain">
+  <tr>
+    <td width="99%" align="left" valign="top">您的位置：维修统计</td>
+  </tr>
+  <tr>
+    <td align="left" valign="top">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" id="search">
+  		 <tr>
+   		 <td width="90%" align="left" valign="middle">
+	         <form id="form">
+	         	<span> 部&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;门:</span>
+	         	<select id="department">
+	         	</select>
+	         	<span> 设备名称:</span>
+	         	<input type="text" name="devicename" class="text-word">
+	         	<span >设备编号:</span>
+	         	<input type="text" name="deviceno" class="text-word ui-widget" id="deviceno" />
+	         	<span >开始时间:</span>
+	         	<input type="text" name="starttime" id="starttime" readonly="readonly" class="text-word" />
+	         	<span >结束时间:</span>
+	         	<input type="text" name="endtime" id="endtime" readonly="readonly" class="text-word"/>
+	         	<br>
+	         	<span>作业区分:</span>
+	         	<select name="task" id="task">
+	         	</select>
+	         	<!-- TODO -->
+	         	<span>实施区分:</span>
+	         	<select name="implementationDistinction" id="implementationDistinction">
+	         	</select>
+	         	
+	         	<span >计划起始时间：</span>
+	         	<input type="text" name="jihuastarttime" id="jihuastarttime" readonly="readonly" class="text-word" />
+	         	<span >计划截至时间：</span>
+	         	<input type="text" name="jihuaendtime" id="jihuaendtime" readonly="readonly" class="text-word"/>
+	         	<br>
+	         	<span>提 报 &nbsp;人:</span>
+	         	<input type="text" name="acceptancePerson" class="text-word">
+	         	<span>完成状态:</span>
+	         	<select name="finish">
+	         		<option value="">全部</option>
+	         		<option value="1">完成</option>
+	         		<option value="2">未完成</option>
+	         	</select>
+	         	<span>配件名称:</span>
+	         	<input type="text" name="partname" class="text-word">
+	         	<span>配件编号:</span>
+	         	<input type="text" name="partno" class="text-word ui-widget" id="partno" />
+				<br>
+	         	<!-- selected -->
+	         	<span>部&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;位:</span>
+	         	<select name="part" id="part">
+	         		<option value="">请选择</option>
+	         	</select>
+	         	<span>区&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;域:</span>
+	         	<select name="area" id="area">
+	         		<option value="">请选择</option>
+	         	</select>
+	         	<span>作业人员:</span>
+	         	<select name="repairman" id="repairman">
+	         		<option value="">请选择</option>
+	         	</select>
+
+	         	<input  type="button" name="search" id="formSearch" value="查询" class="text-but">
+	         	<input  type="button" name="export" class="text-but" id="export" value="excel">
+	         </form>
+         	</td>
+  		</tr>
+	</table>
+    </td>
+  </tr>
+  <tr>
+    <td align="left" valign="top"> 
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" id="main-tab">
+       <tr  class="bggray">
+        <th align="center" valign="middle" >设备号</th>
+        <th align="center" valign="middle" >报修日期</th>
+        <th align="center" valign="middle" >接报时刻</th>
+        <th align="center" valign="middle" >开始时刻</th>
+        <th align="center" valign="middle" >终了时刻</th>
+        <th align="center" valign="middle" >接报人</th>
+        <th align="center" valign="middle" >作业分区</th>
+        <th align="center" valign="middle" >实施分区</th>
+        <th align="center" valign="middle" >完成与否</th>
+        <th align="center" valign="middle" >保全修理时间</th>
+        <th align="center" valign="middle" >设备停机时间</th>
+        <th align="center" valign="middle" >保全人数</th>
+        <th align="center" valign="middle" >部位</th>
+        <th align="center" valign="middle" >故障原因</th>
+        <th align="center" valign="middle" >处置方法</th>
+        <th align="center" valign="middle" >维修人</th>
+        <th align="center" valign="middle" >配件名称</th>
+        <th align="center" valign="middle" >配件数量</th>
+        <th align="center" valign="middle" >备注</th>
+      </tr>
+    </table>
+    </td>
+    </tr>
+</table>
+<script>
+	var deviceno = "";
+	var devicepartno = "";
+	var dfhtml = $("#main-tab").html();
+    $(function() {
+		initPage();
+		var defaultDom = $("#main-tab");
+		var defaultHTML = defaultDom.html();
+		$( "#starttime" ).datepicker({//添加日期选择功能  
+			changeYear: true,
+			numberOfMonths:1,//显示几个月  
+			showButtonPanel:true,//是否显示按钮面板  
+			dateFormat: 'yy-mm-dd',//日期格式  
+			clearText:"清除",//清除日期的按钮名称  
+			closeText:"关闭",//关闭选择框的按钮名称  
+			yearSuffix: '年', //年的后缀  
+			showMonthAfterYear:true,//是否把月放在年的后面  
+			monthNames: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],  
+			dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],  
+			dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],  
+			dayNamesMin: ['日','一','二','三','四','五','六'],  
+			onSelect: function(selectedDate,inst) {//选择日期后执行的操作
+				var sdate = this.value;
+				var currentDate = new Date();
+				var starttime = $("#endtime").val();
+				if(starttime!="") {
+					var etime = new Date(starttime);
+					var stime = new Date(selectedDate);
+					if(stime.getTime()<=etime.getTime()) {
+						this.value = selectedDate;
+					}
+					else {
+						alert("开始时间不能早于结束时间")
+						this.value = inst.lastVal;
+					}
+				}
+			}  
+		});
+    	 
+		$( "#endtime" ).datepicker({//添加日期选择功能  
+			numberOfMonths:1,//显示几个月  
+			showButtonPanel:true,//是否显示按钮面板  
+			dateFormat: 'yy-mm-dd',//日期格式  
+			clearText:"清除",//清除日期的按钮名称  
+			closeText:"关闭",//关闭选择框的按钮名称  
+			yearSuffix: '年', //年的后缀  
+			showMonthAfterYear:true,//是否把月放在年的后面  
+			monthNames: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],  
+			dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],  
+			dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],  
+			dayNamesMin: ['日','一','二','三','四','五','六'],  
+			onSelect: function(selectedDate,inst) {//选择日期后执行的操作
+				var sdate = this.value;
+				var currentDate = new Date();
+				var starttime = $("#starttime").val();
+				if(starttime!="") {
+					var stime = new Date(starttime);
+					var etime = new Date(selectedDate);
+					if(stime.getTime()<=etime.getTime()) {
+						this.value = selectedDate;
+					}
+					else {
+						alert("结束时间不能早于开始时间")
+						this.value = inst.lastVal;
+					}
+				}
+			}
+		});
+
+		//计划时间
+		$( "#jihuastarttime" ).datepicker({//添加日期选择功能  
+			changeYear: true,
+			numberOfMonths:1,//显示几个月  
+			showButtonPanel:true,//是否显示按钮面板  
+			dateFormat: 'yy-mm-dd',//日期格式  
+			clearText:"清除",//清除日期的按钮名称  
+			closeText:"关闭",//关闭选择框的按钮名称  
+			yearSuffix: '年', //年的后缀  
+			showMonthAfterYear:true,//是否把月放在年的后面  
+			monthNames: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],  
+			dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],  
+			dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],  
+			dayNamesMin: ['日','一','二','三','四','五','六'],  
+			onSelect: function(selectedDate,inst) {//选择日期后执行的操作
+				var sdate = this.value;
+				var currentDate = new Date();
+				var starttime = $("#jihuaendtime").val();
+				if(starttime!="") {
+					var etime = new Date(starttime);
+					var stime = new Date(selectedDate);
+					if(stime.getTime()<=etime.getTime()) {
+						this.value = selectedDate;
+					}
+					else {
+						alert("计划开始时间不能早于计划结束时间")
+						this.value = inst.lastVal;
+					}
+				}
+			}  
+		});
+    	 
+		$( "#jihuaendtime" ).datepicker({//添加日期选择功能  
+			numberOfMonths:1,//显示几个月  
+			showButtonPanel:true,//是否显示按钮面板  
+			dateFormat: 'yy-mm-dd',//日期格式  
+			clearText:"清除",//清除日期的按钮名称  
+			closeText:"关闭",//关闭选择框的按钮名称  
+			yearSuffix: '年', //年的后缀  
+			showMonthAfterYear:true,//是否把月放在年的后面  
+			monthNames: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],  
+			dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],  
+			dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],  
+			dayNamesMin: ['日','一','二','三','四','五','六'],  
+			onSelect: function(selectedDate,inst) {//选择日期后执行的操作
+				var sdate = this.value;
+				var currentDate = new Date();
+				var starttime = $("#jihuastarttime").val();
+				if(starttime!="") {
+					var stime = new Date(starttime);
+					var etime = new Date(selectedDate);
+					if(stime.getTime()<=etime.getTime()) {
+						this.value = selectedDate;
+					}
+					else {
+						alert("计划结束时间不能早于计划开始时间")
+						this.value = inst.lastVal;
+					}
+				}
+			}
+		});
+		
+	})
+
+	function initPage() {
+		var deptStatus = false;
+		$.ajax({
+			url: 'GetDepartmentId',
+			type: 'get',
+			dataType: 'json',
+			success: function(res) {
+				var html = ""
+				for(var k in res) {
+					html += "<option value="+k+">"+res[k]+"</option>";
+				}
+				$("#department").html(html)
+				deptStatus = true;
+			}
+		});
+		$.ajax({
+			url: 'GetTj',
+			type: 'get',
+			dataType: 'json',
+			success: function(res) {
+				var task = res.task;
+				var implementationDistinction = res.implementationDistinction;
+				var html = "";
+				html += "<option value=>全部</option>"
+				for(var i=0; i<task.length; i++) {
+					html += "<option value="+task[i]+">"+task[i]+"</option>"
+				}
+				$("#task").html(html);
+				html = "";
+				html += "<option value=>全部</option>"
+				for(var i=0; i<implementationDistinction.length; i++){
+					html += "<option value="+implementationDistinction[i]+">"+implementationDistinction[i]+"</option>"
+				}
+				$("#implementationDistinction").html(html);
+			}
+		});
+		var timer = setInterval(function() {
+			if(deptStatus) {
+				clearInterval(timer);
+				$.ajax({
+					url: 'InitPage',
+					type: 'get',
+					dataType: 'json',
+					data:{"department":$("#department").val()},
+					success: function(res) {
+						var data = res;
+						var device = data.device;
+						var area = data.area;
+						var devicefitting = data.devicefitting;
+						var devicepart = data.devicepart;
+						var employee = data.employee;
+						deviceno = device;
+						devicepartno = devicefitting;
+						$( "#deviceno" ).autocomplete({
+					      source: deviceno
+					    });
+						$( "#partno").autocomplete({
+					      source: devicepartno
+					    });
+						$("#area").append("<option value=>全部</option>");
+						for(var k in area[0]) {
+							$("#area").append("<option value="+k+">"+area[0][k]+"</option>");
+						}
+						for(var k in employee[0]) {
+							$("#repairman").append("<option value="+employee[0][k]+">"+employee[0][k]+"</option>");
+						}
+						$("#part").append("<option value=>全部</option>");
+						for(var k in devicepart) {
+							$("#part").append("<option value="+devicepart[k]+">"+devicepart[k]+"</option>");
+						}
+					}
+				});
+			}
+		},500);
+		$("#formSearch").on("click",submit);
+		$("#export").on("click",exportExcel);
+	}
+    
+    function exportExcel() {
+    	var params = $("#form").serialize();
+    	$.ajax({
+			url: 'exportStatisticalExcel',
+			type: 'get',
+			data:params,
+			success: function(res) {
+				if(res.indexOf("empty")==-1) {
+					window.open(res);
+				}else {
+					alert("查询结果为空，不能导出为excel")
+				} 
+			}
+		});
+    }
+    
+    function submit() {
+    	var params = $("#form").serialize();
+    	$.ajax({
+			url: 'GetStatistical',
+			type: 'get',
+			dataType: 'json',
+			data:params,
+			success: function(res) {
+				if(res.status) {
+					var data = res.content;
+					var mainDom = $("#main-tab");
+					var arrs = ["deviceNo","repairDate","acceptance","startTime","endTime","acceptancePerson","task","implementationDistinction","finish","maintenanceTime","downTime","repairmanNumber","part","failureCause","disposalMethod","repairman","partsName","partsNumber","mark"]
+					var template = dfhtml;
+					if(data.length>0) {
+						for(var k in data) {
+							template += "<tr>";
+							for(var i=0; i<arrs.length; i++) {
+								if(data[k][arrs[i]]) {
+									template += "<th>"+data[k][arrs[i]]+"</th>";
+								} else {
+									template += "<th></th>";
+								}
+							}
+							template += "</tr>";
+							mainDom.html(template)
+						}
+					}  else {
+						mainDom.html(dfhtml);
+					}
+					
+				}
+			}
+		});
+    }
+	 
+      
+ </script>
+</body>
+</body>
+</html>

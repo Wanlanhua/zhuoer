@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="css/css.css">
+    <link rel="stylesheet" href="css/jquery.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.1/js/bootstrap.min.js"></script>
+    <title>报修</title>
+    <style>
+    th{text-align:center;}
+        span{height:40px; line-height:40px; padding:0 0px 0 10px; float:left;}
+        a>span{padding: 0;}
+        .ui-datepicker-title>span{float:none;}
+        .text-word{height:24px; line-height:24px; width:110px; margin:8px 0 6px 0; padding:0 0px 0 10px; float:left; border:1px solid #FFF;}
+        .text-but{height:24px; line-height:24px; width:55px; background: url(images/main/list_input.jpg) no-repeat left top; border:none; cursor:pointer; color:#666; float:left; margin:8px 0 0 6px;}
+        .ui-datepicker{width: 20em;}
+    </style>
+    <script>
+		// 自动推送
+		function autoPush(){
+			$.ajax({
+				method: "post",
+				url: "AutoRepairInfo",
+				data: {},
+				success: function (array2) {
+					alert('推送成功!');
+				}
+			});
+		}
+		pushid=0;// 推送id
+	 	// 推送
+		function push(){
+		 var pushstr='';
+			$('input[name="pushperson"]:checked').each(function(){
+				pushstr += this.value + ',';
+			});
+			$.ajax({
+	            method: "post",
+	            url: "QBaiduSend",
+	            data: {
+	            	id:pushid,
+	            	name:pushstr
+	            },
+	            success: function (array2) {
+	            	alert('推送成功!');
+	            }
+	        });
+		}
+		// 获取推送人
+		function getRepairPerson(){
+	    	$.ajax({
+	            type: "post",
+	            url: "QReturnRepairInfo",
+	            async: true,
+	            data: {
+	                operation: "selname",
+	            },
+	            dataType: 'JSON',
+	            success: function (array2) {
+	                var str2 = "";
+	                $.each(array2, function (index2, obj2, t2) {
+	                	if (index2 % 5 == 0){
+	                    	str2+="<br>";
+	                    }
+	                    str2 += "&nbsp;&nbsp;&nbsp;<input name='pushperson' type='checkbox' value="+obj2.name+">"+obj2.name+"</input>&nbsp;&nbsp;&nbsp;";
+	                    
+	                });
+	                $('#pushPerson').append(str2);
+	            }
+	        });
+		}
+    // 权限管理
+    function power(){
+    	auditing = false;
+		auditing2 = false;
+		$.ajax({
+			url:"GetJsonUserMaintenancePower",
+			type:"post",
+			dataType:'JSON',
+			async:false,
+			success:function(json){
+				if (json['input'] == '1')
+					$('#add').css('display', 'table-cell');
+				if (json['modify'] == '1')
+					$('.modify').css('display', 'inline');
+				if (json['auditing'] == '1')
+					auditing = true;
+				if (json['auditing2'] == '1')
+					auditing2 = true;
+				if (json['del'] == '1')
+					$('.deleteOperation').css('display', 'inline');
+				if (json['find'] == '1')
+					$('#find').css('display', 'block');
+				if (json['input'] != 1 && json['modify'] != '1' && json['auditing'] != '1' && json['auditing2'] != '1' && json['del'] != '1')
+					$('.allOperation').css('display', 'none');
+					
+			}
+		});
+    }
+    /* 自动提示设备号监听事件 */
+    function hintDeviceNo(){ 
+       $.ajax({
+           dataType:"json",    //数据类型为json格式
+           contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+           type:"GET",  
+           url:"DeviceSearchSevlet",
+           async: false,
+           data:{
+        	   	type:"selectDeviceNoOnly",
+           		deviceNo:$("#deviceNo").val()
+           },
+           statusCode: {404: function() {  
+                alert('page not found'); }  
+             },      
+           success:function(data,textStatus){ 
+        	   $("#deviceNo").autocomplete({
+    	    	      source: data
+    	       });
+           }  
+       }); 
+     }  
+    function selectDeviceName(content) {
+    	$('#DeviceName').text("");
+		$.ajax({
+		       dataType:"json",    //数据类型为json格式
+		       contentType: "application/x-www-form-urlencoded; charset=utf-8", 
+		       type:"GET",  
+		       url:"DeviceSearchSevlet",
+		       async: false,
+		       data:{
+		    	   	type:"selectDeviceName",
+		       		deviceNo:content
+		       },
+		       statusCode: {404: function() {  
+		            alert('page not found'); }  
+		         },      
+		       success:function(data,textStatus){ 
+		    	   $("#DeviceName").text(data[0]);
+		       }  
+		   }); 
+	}
+        $(function(){
+        	power();
+    		$("body").delegate(".ui-menu-item-wrapper","click",function(){
+    			var content = $(this).text();
+    			selectDeviceName(content);
+    		});
+    		hintDeviceNo();
+    		$.ajax({
+    			url:"GetDepartmentId",
+    			type:"post",
+    			dataType:'JSON',
+    			success:function(json){
+    				str = ""
+    				for (var key in json){
+    					str+="<option value='"+key+"'>"+json[key]+"</option>";
+    				}
+    				$('#customerNo').empty().append(str);
+    			}
+    		});
+    		getRepairPerson();
+    		$(".datePick").datepicker({//添加日期选择功能  
+			    numberOfMonths:1,//显示几个月  
+			    showButtonPanel:true,//是否显示按钮面板  
+			    dateFormat: 'yy-mm-dd',//日期格式  
+			    clearText:"清除",//清除日期的按钮名称  
+			    closeText:"关闭",//关闭选择框的按钮名称  
+			    yearSuffix: '年', //年的后缀  
+			    changeYear: true, // 年份点选
+			    showMonthAfterYear:true,//是否把月放在年的后面  
+			    monthNames: ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'],  
+			    dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],  
+			    dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],  
+			    dayNamesMin: ['日','一','二','三','四','五','六'],  
+			    onSelect: function(selectedDate) {//选择日期后执行的操作
+			    	var currentDate = new Date();
+			    	this.value = selectedDate;
+			    }  
+			  });  
+    		totalpage = getQueryString('totalpage') || 1; // 总页数
+    		page = getQueryString('page') || 1; // 当前页数
+    		$('#deviceNo').val(getQueryString('deviceNo'));
+    		$('#startdate').val(getQueryString('startdate'));
+    		$('#enddate').val(getQueryString('enddate'));
+    		$('#state1').val(getQueryString('state1'));
+    		$('#state2').val(getQueryString('state2'));
+    		$('#state').val(getQueryString('state'));
+    		getInfo(page);
+    	});
+     // 获取url中的参数
+    	function getQueryString(name) { 
+    		var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i"); 
+    		var r = window.location.search.substr(1).match(reg); 
+    		if (r != null) return unescape(r[2]); return null; 
+   		} 
+    	function getInfo(spage){
+    		page = spage<= 1 ? 1:spage;
+    		page = spage>=totalpage ? totalpage:page;
+    		$.ajax({
+    			type:"post",
+    			url:"QRepairInfo",
+    			data:{
+    				customerNo:$('#customerNo').val(),
+    				startdate:$('#startdate').val(),
+    				enddate:$('#enddate').val(),
+    				state1:$('#state1').val(),
+    				state2:$('#state2').val(),
+    				deviceNo:$('#deviceNo').val(),
+    				state:$('#state').val(),
+    				spage:page
+    			},
+    			dataType:'JSON',
+    			success:function(array){
+    				str="<tbody><tr class='bggray'>"+
+                    "<th align='center' valign='middle'>审核状态</th>"+
+    				"<th align='center' valign='middle'>一级审核意见</th>"+
+    				"<th align='center' valign='middle'>二级审核意见</th>"+
+                    "<th align='center' valign='middle'>设备编号</th>"+
+    				"<th align='center' valign='middle'>设备名称</th>"+
+                    /*"<th align='center' valign='middle'>异常内容</th>"+*/
+                    "<th align='center' valign='middle'>提报来源</th>"+
+                    "<th align='center' valign='middle'>报修日期</th>"+
+                    "<th align='center' valign='middle'>报修部门</th>"+
+                    "<th align='center' valign='middle'>报修时间</th>"+
+                    "<th align='center' valign='middle'>故障现象描述</th>"+
+                    "<th align='center' valign='middle'>领取状态</th>"+
+                    "<th align='center' valign='middle'>完成状态</th>"+
+                    "<th align='center' valign='middle'>领取人</th>"+
+                    "<th align='center' valign='middle'>领取时间</th>"+
+                    "<th align='center' valign='middle'>计划领取人</th>"+
+                    "<th align='center' valign='middle'>计划领取时间</th>"+
+                    "<th align='center' valign='middle'>班组</th>"+
+                    "<th align='center' valign='middle'>挂牌人</th>"+
+                    "<th align='center' valign='middle'>挂牌日期</th>"+/*
+                    "<th align='center' valign='middle'>报修等级</th>"+*/
+                    "<th align='center' valign='middle'>故障类别</th>"+
+                    "<th align='center' valign='middle'>审核人</th>"+
+                    "<th align='center' valign='middle'>备注</th>"+
+                    "<th class='allOperation' align='center' valign='middle'>操作</th>"+
+                "</tr>";
+                $.each(array, function(index,obj,t) {
+                	if(obj.totalpage==null)
+                	{
+                		var endstate;
+                		if((obj.state)=="0")
+                		{
+                			endstate="提交";
+                		}
+                		if((obj.state)=="1")
+                		{
+                			endstate="一级审核通过";
+                		}
+                		if((obj.state)=="2")
+                		{
+                			endstate="一级审核未通过";
+                		}
+                		if((obj.state)=="3")
+                		{
+                			endstate="二级审核通过";
+                		}
+                		if((obj.state)=="4")
+                		{
+                			endstate="二级审核未通过";
+                		}
+                		var stateone;
+                		if((obj.state1)=="0")
+                		{
+                			stateone="未领取";
+                		}
+                		if((obj.state1)=="1")
+                		{
+                			stateone="领取";
+                		}
+                		var statetwo;
+                		if((obj.state2)=="0")
+                		{
+                			statetwo="未完成";
+                		}
+                		if((obj.state2)=="1")
+                		{
+                			statetwo="完成";
+                		}
+                		if((obj.state2)=="2")
+                		{
+                			statetwo="未完成转计划";
+                		}
+                		str+="<tr>"+
+				                    "<td align=\"center\" valign=\"middle\">"+endstate+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+(obj.auditOpinion1 == null ? "无" : obj.auditOpinion1)+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+(obj.auditOpinion2 == null ? "无" : obj.auditOpinion2)+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.deviceNo+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.deviceName+"</td>"+/*
+				                    "<td align=\"center\" valign=\"middle\">"+obj.content+"</td>"+*/
+				                    "<td align=\"center\" valign=\"middle\">"+obj.source+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.repairDate+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.repairDepartment+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.repairTime+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.faultPhenomenon+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+stateone+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+statetwo+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.maintenancePerson+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.date1+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.person2+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.date2+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.className+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.person+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.date+"</td>"+/*
+				                    "<td align=\"center\" valign=\"middle\">"+obj.auditLevel+"</td>"+*/
+				                    "<td align=\"center\" valign=\"middle\">"+obj.faultCategory+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.reviewer+"</td>"+
+				                    "<td align=\"center\" valign=\"middle\">"+obj.mark+"</td>"+
+				                    "<td class='allOperation' align=\"center\" valign=\"middle\">"+
+				                    "<a class='modify'  href='报修详情.html?id="+obj.id+"'>详情</a>&nbsp;&nbsp;"+
+				                        "<a class='modify' style='display:none;' href='编辑报修信息.html?id="+obj.id+"&totalpage="+totalpage+"&page="+page
+		                        		+"&deviceNo="+$('#deviceNo').val()+"&startdate="+$('#startdate').val()+"&enddate="+$('#enddate').val()
+		                        		+"&state1="+$('#state1').val()+"&state2="+$('#state2').val()+"&state="+$('#state').val()+"'>编辑</a>&nbsp;&nbsp;"+
+										"<a class='deleteOperation' style='display:none;' href='javascript:void(0)' onclick='del("+obj.id+")'>删除</a>&nbsp;&nbsp;";
+										if((obj.state2)=="1")<!--完成可审-->
+				                        {
+				                        	if((obj.state)=="3")<!--二审通过一审不可审-->
+				                        	{
+				                        		if (auditing) str += "<a href='javascript:return false;' onclick='return false;' style='cursor: default;opacity: 0.2;'>一级审核通过</a>&nbsp;&nbsp;"+
+												"<a href='javascript:return false;' onclick='return false;' style='cursor: default;opacity: 0.2;'>一级审核未通过</a>&nbsp;&nbsp;"; 
+				                        	}
+				                        	else
+				                        	{
+				                        		if (auditing) str += "<a href='javascript:void(0)' onclick='postReview1("+obj.id+", \"one\", \"1\")'>一级审核通过</a>&nbsp;&nbsp;"+
+												"<a href='javascript:void(0)' onclick='postReview1("+obj.id+", \"one\", \"2\")'>一级审核未通过</a>&nbsp;&nbsp;"; 
+				                        	}
+				                        	if((obj.state)=="2")<!--一审不通过二审不可审-->
+				                        	{
+				                        		if (auditing2) str += "<a href='javascript:return false;' onclick='return false;' style='cursor: default;opacity: 0.2;'>二级审核通过</a>&nbsp;&nbsp;"+
+												"<a href='javascript:return false;' onclick='return false;' style='cursor: default;opacity: 0.2;'>二级审核未通过</a>&nbsp;&nbsp;";
+				                        	}
+				                        	else
+				                        	{
+				                        		if (auditing2) str += "<a href='javascript:void(0)' onclick='postReview2("+obj.id+", \"two\", \"3\")'>二级审核通过</a>&nbsp;&nbsp;"+
+												"<a href='javascript:void(0)' onclick='postReview2("+obj.id+", \"two\", \"4\")'>二级审核未通过</a>&nbsp;&nbsp;";
+				                        	}
+											
+										 }
+				                       /*
+				                        if (auditing) str += "<a href='javascript:void(0)' onclick='postReview1("+obj.id+", \"one\", \"1\")'>一级审核通过</a>&nbsp;&nbsp;"+
+														"<a href='javascript:void(0)' onclick='postReview1("+obj.id+", \"one\", \"2\")'>一级审核未通过</a>&nbsp;&nbsp;";
+										 if (auditing2) str += "<a href='javascript:void(0)' onclick='postReview2("+obj.id+", \"two\", \"3\")'>二级审核通过</a>&nbsp;&nbsp;"+
+														"<a href='javascript:void(0)' onclick='postReview2("+obj.id+", \"two\", \"4\")'>二级审核未通过</a>&nbsp;&nbsp;";
+										*/
+				                        
+										str+="<a href='javascript:void(0)' onmouseup='pushid="+obj.id+"' data-toggle=\"modal\" data-target=\"#myModal\">推送</a>&nbsp;&nbsp;";
+										str+="</td>"+
+		                		"</tr>";
+                	}else{
+	                		totalpage = obj.totalpage;
+	                		$('#currentPage').empty();
+	                		$('#currentPage').append("&nbsp;" + page + "&nbsp;");
+	                		$('#total').empty();
+	                		$('#total').append("&nbsp;" + totalpage + "&nbsp;");
+	                	}
+                });
+                str+="</tbody>"
+				$('#main-tab').empty();
+				$('#main-tab').append(str);
+				power();
+    			}
+    		});
+    	}
+		function postReview1(id,operation,state){
+			auditOpinion = prompt("请输入审核意见");
+			if (auditOpinion != null)
+			$.ajax({
+				url:'QCRUDRepairInfo',
+				method:'post',
+				data:{
+					id:id,
+					operation:operation,
+					state:state,
+					auditOpinion1 : auditOpinion
+				},
+				success:function(){
+					getInfo(page);
+				}
+			})
+		}
+		function postReview2(id,operation,state){
+			auditOpinion = prompt("请输入审核意见");
+			if (auditOpinion != null)
+			$.ajax({
+				url:'QCRUDRepairInfo',
+				method:'post',
+				data:{
+					id:id,
+					operation:operation,
+					state:state,
+					auditOpinion2 : auditOpinion
+				},
+				success:function(){
+					getInfo(page);
+				}
+			})
+		}
+		function del(id){
+			if (!confirm("确定要删除吗？")){
+				return;
+			}
+			$.ajax({
+				url:'QCRUDRepairInfo',
+				method:'post',
+				data:{
+					id:id,
+					operation:'del'
+				},
+				success:function(){
+					getInfo(page);
+				}
+			})
+		}
+		//导出excel
+    	function sendExcel()
+    	{
+    		$.ajax({
+    			type:"post",
+    			url:"QRepairInfoSendExcel",
+    			data:{
+    				customerNo:$('#customerNo').val(),
+    				startdate:$('#startdate').val(),
+    				enddate:$('#enddate').val(),
+    				state1:$('#state1').val(),
+    				state2:$('#state2').val(),
+    				deviceNo:$('#deviceNo').val(),
+    				state:$('#state').val(),
+    				
+    			},
+    			
+    			success: function(res) {
+					if(res.indexOf("empty")==-1) {
+						window.open(res);
+					}else {
+						alert("查询结果为空，不能导出为excel")
+					} 
+				}
+    		})
+    	}
+    </script>
+</head>
+
+<body>
+	<table>
+	    <tr>
+			<td width="99%" align="left" valign="top">您的位置：设备报修管理</td>
+		</tr>
+	</table>
+    <table id="search" style="width: 180%">
+        <tbody>
+            <tr>
+                <td width="90%" align="left" valign="middle">
+                    <span>项目部编号：</span>
+                    <select id="customerNo"  class="text-word">
+                    </select>
+                    <span>设备编号：</span>
+                    <input id="deviceNo" type="text" class="text-word" onkeyup="hintDeviceNo()"  onchange="selectDeviceName(this.value)"/>
+                    <span id="DeviceName"></span>
+                    <span>起始日期：</span>
+                    <input id="startdate" type="text" class="text-word datePick" />
+                    <span>结束日期：</span>
+                    <input id="enddate" type="text" class="text-word datePick" />
+                    <span>领取状态：</span>
+                    <select id="state1" class="text-word">
+                        <option value="">全部</option>
+                        <option value="0">未领取</option>
+                        <option value="1">已领取</option>
+                    </select></td>
+            </tr>
+            <tr>
+            <td>
+                    <span>完成状态：</span>
+                    <select id="state2" class="text-word">
+                        <option value="">全部</option>
+                        <option value="0">未完成</option>
+                        <option value="1">完成</option>
+                        <option value="2">计划</option>
+                    </select>
+                    <span>审核状态：</span>
+                    <select id="state" class="text-word">
+                        <option value="">全部</option>
+                        <option value="0">提交</option>
+                        <option value="1">一级审核通过</option>
+                        <option value="2">一级审核未通过</option>
+                        <option value="3">二级审核通过</option>
+                        <option value="4">二级审核未通过</option>
+                    </select>
+                    <button class="text-but" onclick="sendExcel()">导出excel</button>
+					<button id="find" class="text-but" onclick="getInfo(page)" style="display:none">查询</button>
+					<button style="display:none;" class="text-but" onclick="autoPush()">自动推送</button>
+                <a href="添加报修信息.html" class="add" style="float:left;margin-left:20px;">设备报修信息</a>
+            </td></tr>
+        </tbody>
+    </table>
+    <table id="main-tab" style="width: 180%;">
+        </table>
+        <div style="float: right; padding-right: 2em;">
+		第<div id="currentPage" style="display: inline;"></div>页&nbsp;&nbsp;共<div id="total" style="display: inline;"></div>页 <a href="javascript:void(0)" id="first" onclick="getInfo(1)">首页</a>
+		<a href="javascript:void(0)" id="lastpage"
+			onclick="getInfo(page - 1)">上一页</a> <a
+			href="javascript:void(0)" id="nextpage"
+			onclick="getInfo(page + 1)">下一页</a> <a
+			href="javascript:void(0)" id="end"
+			onclick="getInfo(totalpage)">尾页</a>
+	</div>
+<!-- 模态框（Modal） -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        	<div id="pushPerson"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="push()">推送</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+</body>
+</html>
